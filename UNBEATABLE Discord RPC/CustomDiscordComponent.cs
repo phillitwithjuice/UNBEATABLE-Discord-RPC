@@ -26,7 +26,7 @@ namespace UNBEATABLE_Discord_RPC
             set {
                 discord.Dispose();
                 _appId = value;
-                connectToDiscord();
+                ConnectToDiscord();
             }
         }
 
@@ -39,7 +39,7 @@ namespace UNBEATABLE_Discord_RPC
         private void Awake()
         {
             Object.DontDestroyOnLoad(base.gameObject);
-            connectToDiscord();
+            ConnectToDiscord();
         }
 
         private void Start()
@@ -72,7 +72,7 @@ namespace UNBEATABLE_Discord_RPC
             }
         }
 
-        private void connectToDiscord()
+        private void ConnectToDiscord()
         {
             IsConnected = true;
             try
@@ -89,6 +89,29 @@ namespace UNBEATABLE_Discord_RPC
             activity.Assets.SmallImage = (activity.Assets.LargeImage = "drp_icon");
             activity.Details = "";
             activity.State = "";
+            updateActivity = true;
+        }
+
+        public void EnsureUNBEATABLEAppId()
+        {
+            if (appId != UNBEATABLEAppId)
+            {
+                appId = UNBEATABLEAppId;
+            }
+        }
+
+        public void EnsureWhiteLabelAppId()
+        {
+            if (appId != WhiteLabelAppId)
+            {
+                appId = WhiteLabelAppId;
+            }
+        }
+
+        public void StartActivityTimer()
+        {
+            activity.Timestamps.Start = Convert.ToInt64((DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
+            activity.Timestamps.End = 0;
             updateActivity = true;
         }
     }

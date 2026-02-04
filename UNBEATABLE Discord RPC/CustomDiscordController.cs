@@ -11,7 +11,7 @@ namespace UNBEATABLE_Discord_RPC
 {
     public class CustomDiscordController : MonoBehaviour
     {
-        public static readonly Dictionary<string, string> difficultyMap = new Dictionary<string, string>()
+        public static readonly Dictionary<string, string> DifficultyMap = new Dictionary<string, string>()
         {
             { "Beginner", "BEGINNER" },
             { "Easy", "NORMAL" },
@@ -24,8 +24,6 @@ namespace UNBEATABLE_Discord_RPC
 
         private string loadedSceneName = "";
 
-        private float activityTimer;
-
         private RhythmGameContainer rhythmGameContainer;
 
         private ArcadeMenuStateMachine arcadeMenuStateMachine;
@@ -33,10 +31,6 @@ namespace UNBEATABLE_Discord_RPC
         private ArcadeSongList arcadeSongList;
 
         private HighScoreScreen highScoreScreen;
-
-        public static List<EArcadeMenuStates> showSongInfoInMenuState = new List<EArcadeMenuStates>()
-        {
-        };
 
         private void Awake()
         {
@@ -70,7 +64,6 @@ namespace UNBEATABLE_Discord_RPC
 
         private void OnSceneLoad(Scene LoadedScene, LoadSceneMode SceneMode)
         {
-            activityTimer = 0f;
             UnityEngine.SceneManagement.Scene scene = (UnityEngine.SceneManagement.Scene)Convert.ChangeType(LoadedScene, typeof(UnityEngine.SceneManagement.Scene));
             loadedSceneName = scene.name;
             SetSceneState(afterLoad: true);
@@ -85,7 +78,7 @@ namespace UNBEATABLE_Discord_RPC
                     discordComponent.activity.State = "Getting Ready";
                     if (afterLoad)
                     {
-                        StartActivityTimer();
+                        discordComponent.StartActivityTimer();
                     }
                     discordComponent.updateActivity = true;
                     break;
@@ -106,34 +99,12 @@ namespace UNBEATABLE_Discord_RPC
             }
         }
 
-        private void StartActivityTimer()
-        {
-            discordComponent.activity.Timestamps.Start = Convert.ToInt64((DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
-            discordComponent.activity.Timestamps.End = 0;
-            discordComponent.updateActivity = true;
-        }
-
-        private void ensureUNBEATABLEAppId()
-        {
-            if (discordComponent.appId != CustomDiscordComponent.UNBEATABLEAppId)
-            {
-                discordComponent.appId = CustomDiscordComponent.UNBEATABLEAppId;
-            }
-        }
-        private void ensureWhiteLabelAppId()
-        {
-            if (discordComponent.appId != CustomDiscordComponent.WhiteLabelAppId)
-            {
-                discordComponent.appId = CustomDiscordComponent.WhiteLabelAppId;
-            }
-        }
-
         private void SetMainMenuState(bool afterLoad = false)
         {
-            ensureUNBEATABLEAppId();
+            discordComponent.EnsureUNBEATABLEAppId();
             if (afterLoad)
             {
-                StartActivityTimer();
+                discordComponent.StartActivityTimer();
             }
             discordComponent.activity.Details = "";
             discordComponent.activity.State = "Main Menu";
@@ -142,15 +113,15 @@ namespace UNBEATABLE_Discord_RPC
 
         private void SetStoryState(bool afterLoad = false)
         {
-            ensureUNBEATABLEAppId();
+            discordComponent.EnsureUNBEATABLEAppId();
             discordComponent.activity.Details = $"Slot {FileStorage.StorySaves.SelectedSlot + 1} Episode {FileStorage.variables.GetCurrentChapter() + 1}/{FileStorage.StorySaves.HighestReachedChapter + 1}";
-            discordComponent.activity.State = $"Story Mode On {difficultyMap[FileStorage.variables.difficulty]}";
+            discordComponent.activity.State = $"Story Mode On {DifficultyMap[FileStorage.variables.difficulty]}";
             discordComponent.updateActivity = true;
         }
 
         private void SetArcadeState(bool afterLoad = false)
         {
-            ensureUNBEATABLEAppId();
+            discordComponent.EnsureUNBEATABLEAppId();
             if (afterLoad)
             {
                 rhythmGameContainer = FindAnyObjectByType<RhythmGameContainer>();
@@ -160,7 +131,7 @@ namespace UNBEATABLE_Discord_RPC
                 // let OnArcadeMenuStateChange and OnSelectedSongChanged handle updating the Discord status
                 if (afterLoad)
                 {
-                    StartActivityTimer();
+                    discordComponent.StartActivityTimer();
                     ArcadeSongList.Instance.OnSelectedSongChanged += OnSelectedSongChanged;
                     arcadeMenuStateMachine = FindObjectOfType<ArcadeMenuStateMachine>();
                     arcadeSongList = FindObjectOfType<ArcadeSongList>();
@@ -177,7 +148,7 @@ namespace UNBEATABLE_Discord_RPC
                 // let OnScoreEvent handle updating the Discord status
                 if (afterLoad)
                 {
-                    StartActivityTimer();
+                    discordComponent.StartActivityTimer();
                     highScoreScreen = FindObjectOfType<HighScoreScreen>();
                 }
             }
@@ -185,12 +156,12 @@ namespace UNBEATABLE_Discord_RPC
 
         private void SetWhiteLabelState(bool afterLoad = false)
         {
-            ensureWhiteLabelAppId();
+            discordComponent.EnsureWhiteLabelAppId();
         }
 
         private void OnStartStory()
         {
-            StartActivityTimer();
+            discordComponent.StartActivityTimer();
         }
 
         private void OnArcadeMenuStateChange(ArcadeMenuState from, ArcadeMenuState to, bool Instant)
@@ -295,8 +266,7 @@ namespace UNBEATABLE_Discord_RPC
             if (rhythmGameContainer != null && rhythmGameContainer.isActiveAndEnabled)
             {
                 var playbackTime = (int)(rhythmTracker.TimelinePosition / FileStorage.beatmapOptions.songSpeed) / 1000;
-                DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                var start = Convert.ToInt64((DateTime.UtcNow.AddSeconds(-playbackTime) - dateTime).TotalSeconds);
+                var start = Convert.ToInt64((DateTime.UtcNow.AddSeconds(-playbackTime) - DateTime.UnixEpoch).TotalSeconds);
                 discordComponent.activity.Timestamps = new Discord.ActivityTimestamps();
                 discordComponent.activity.Timestamps.Start = start;
                 if (playbackTime < 0)
@@ -342,82 +312,6 @@ namespace UNBEATABLE_Discord_RPC
                 discordComponent.activity.State = "Song Scoring";
             }
             discordComponent.updateActivity = true;
-        }
-
-        private void Update()
-        {
-            /*
-            if (rhythmController == null && discordComponent.IsConnected && loadedSceneName != null)
-            {
-                if (storyStateActivityTimer <= 0f)
-                {
-                    SetStoryState();
-                    discordComponent.updateActivity = true;
-                    storyStateActivityTimer = 90f;
-                }
-
-                storyStateActivityTimer -= Time.deltaTime;
-            }
-            else
-            {
-                if (!discordComponent.IsConnected || hasUpdatedSongActivity || rhythmController == null || rhythmController.beatmap == null)
-                {
-                    return;
-                }
-
-                for (int i = 0; i < activities.rhythmScenePairs.Length; i++)
-                {
-                    for (int j = 0; j < activities.rhythmScenePairs[i].sceneNames.Length; j++)
-                    {
-                        if (loadedSceneName == activities.rhythmScenePairs[i].sceneNames[j])
-                        {
-                            discordComponent.activity.Assets.LargeImage = activities.rhythmScenePairs[i].largeImage;
-                            break;
-                        }
-                    }
-                }
-
-                discordComponent.activity.Details = rhythmController.beatmap.metadata.artist + " - " + rhythmController.beatmap.metadata.title;
-                string text = $"{rhythmController.beatmap.metadata.GetDifficulty("Beginner")} {rhythmController.beatmap.metadata.tagData.Level}";
-                if (JeffBezosController.GetNoFail() == 0 && JeffBezosController.GetAssistMode() == 0 && JeffBezosController.GetSongSpeed() == 0 && JeffBezosController.GetScrollSpeedIndex() == 12)
-                {
-                    text += "//no modifiers";
-                }
-                else
-                {
-                    if (JeffBezosController.GetNoFail() > 0)
-                    {
-                        text += "//no fail";
-                    }
-
-                    if (JeffBezosController.GetAssistMode() > 0)
-                    {
-                        text += "//assist mode";
-                    }
-
-                    if (JeffBezosController.GetSongSpeed() > 0)
-                    {
-                        int songSpeed = JeffBezosController.GetSongSpeed();
-                        text += $"//{((songSpeed == 1) ? "half time" : "double time")}";
-                    }
-
-                    if (JeffBezosController.GetScrollSpeedIndex() != 4)
-                    {
-                        text += $"//scroll speed x{(float)(JeffBezosController.GetScrollSpeedIndex()) * 0.05f + 0.2f:0.00}";
-                    }
-                }
-
-                discordComponent.activity.State = text;
-                discordComponent.updateActivity = true;
-                hasUpdatedSongActivity = true;
-            }
-            */
-        }
-
-        private long GetSongEndTimestamp(int SongLengthInSeconds)
-        {
-            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            return Convert.ToInt64((DateTime.UtcNow.AddSeconds(SongLengthInSeconds) - dateTime).TotalSeconds);
         }
     }
 }
