@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(UNBEATABLE_Discord_RPC.Core), "UNBEATABLE Discord RPC", "1.0.0", "phillitwithjuice", null)]
+[assembly: MelonInfo(typeof(UNBEATABLE_Discord_RPC.Core), "UNBEATABLE Discord RPC", "1.0.1", "phillitwithjuice", null)]
 [assembly: MelonGame("D-CELL GAMES", "UNBEATABLE")]
 
 namespace UNBEATABLE_Discord_RPC
