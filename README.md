@@ -10,6 +10,14 @@ Afterwards run UNBEATABLE once and open the games files (in Steam right click UN
 
 Now download and copy the file "UNBEATABLE_Discord_RPC.dll" from the [latest release](https://github.com/phillitwithjuice/UNBEATABLE-Discord-RPC/releases/latest) into the "Mods" folder inside the game files and launch the game.
 
+### Help! Please get rid of that console window/the stuttering when ALT+Tabbing
+
+Add the following to your launch options (in Steam right click UNBEATABLE and edit Properties > General > Launch Options).
+
+```
+--melonloader.hideconsole
+```
+
 ## Features
 
  - Startup status (during logo and title screen)
