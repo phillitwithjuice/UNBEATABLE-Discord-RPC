@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace UNBEATABLE_Discord_RPC
+﻿namespace UNBEATABLE_Discord_RPC
 {
     using Discord;
     using MelonLoader;
@@ -11,7 +7,7 @@ namespace UNBEATABLE_Discord_RPC
 
     public class CustomDiscordComponent : MonoBehaviour
     {
-        public global::Discord.Discord discord;
+        public Discord discord;
 
         public Activity activity;
 
@@ -24,7 +20,10 @@ namespace UNBEATABLE_Discord_RPC
         public long appId {
             get { return _appId; }
             set {
-                discord.Dispose();
+                if (discord != null)
+                {
+                    discord.Dispose();
+                }
                 _appId = value;
                 ConnectToDiscord();
             }
@@ -56,19 +55,17 @@ namespace UNBEATABLE_Discord_RPC
         {
             while (true)
             {
-                yield return new WaitForSeconds(updateTime);
                 if (IsConnected)
                 {
                     discord.RunCallbacks();
                     if (updateActivity)
                     {
                         Melon<Core>.Logger.Msg($"Updating Discord activity to {activity.Details} {activity.State} {activity.Timestamps.Start} {activity.Timestamps.End}");
-                        activityManager.UpdateActivity(activity, delegate
-                        {
-                        });
+                        activityManager.UpdateActivity(activity, delegate {});
                         updateActivity = false;
                     }
                 }
+                yield return new WaitForSecondsRealtime(updateTime);
             }
         }
 

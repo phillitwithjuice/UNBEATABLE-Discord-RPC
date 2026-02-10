@@ -1,5 +1,4 @@
-﻿using Discord;
-using MelonLoader;
+﻿using MelonLoader;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -27,29 +26,43 @@ namespace UNBEATABLE_Discord_RPC
         public new void OnApplicationLateStart()
         {
             GameStarted = true;
-            gameStartedTime = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            gameStartedTime = (long)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds;
 
             var discord = GameObject.FindGameObjectWithTag("Discord");
-            var discordActivityController = discord.GetComponent<DiscordActivityController>();
-            if (discordActivityController.enabled)
+            CustomDiscordComponent component;
+            CustomDiscordController controller;
+
+            if (discord == null)
             {
-                LoggerInstance.Warning("The games internal Discord RPC controller is enabled!");
-                LoggerInstance.Warning("Will not patch custom Discord RPC controller into the game!");
-                LoggerInstance.Msg("Have a nice day!");
-                Unregister();
-                return;
+                discord = new GameObject("Discord", [typeof(CustomDiscordComponent), typeof(CustomDiscordController)]);
+                discord.tag = "Discord";
+                component = discord.GetComponent<CustomDiscordComponent>();
+                controller = discord.GetComponent<CustomDiscordController>();
             }
-            discordComponent = discord.GetComponent<DiscordComponent>();
-            discordComponent.enabled = false;
-            discordComponent.discord.Dispose();
-            UnityEngine.Object.Destroy(discordComponent);
+            else
+            {
+                var discordActivityController = discord.GetComponent<DiscordActivityController>();
+                if (discordActivityController !=  null && discordActivityController.enabled)
+                {
+                    LoggerInstance.Warning("The games internal Discord RPC controller is enabled!");
+                    LoggerInstance.Warning("Will not patch custom Discord RPC controller into the game!");
+                    LoggerInstance.Msg("Have a nice day!");
+                    Unregister();
+                    return;
+                }
 
-            var customDiscordComponent = discord.AddComponent<CustomDiscordComponent>();
-            discordComponent.enabled = true;
+                var discordComponent = discord.GetComponent<DiscordComponent>();
+                if (discordComponent != null)
+                {
+                    discordComponent.enabled = false;
+                    discordComponent.discord?.Dispose();
+                    UnityEngine.Object.Destroy(discordComponent);
+                }
 
-            var controller = discord.AddComponent<CustomDiscordController>();
-            controller.discordComponent = customDiscordComponent;
-            controller.enabled = true;
+                component = discord.AddComponent<CustomDiscordComponent>();
+                controller = discord.AddComponent<CustomDiscordController>();
+            }
+            controller.discordComponent = component;
         }
     }
 }

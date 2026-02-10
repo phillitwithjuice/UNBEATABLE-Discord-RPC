@@ -5,7 +5,6 @@ using MelonLoader;
 using Rhythm;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static UNBEATABLE_Discord_RPC.CustomEvents;
 
 namespace UNBEATABLE_Discord_RPC
 {
@@ -114,7 +113,7 @@ namespace UNBEATABLE_Discord_RPC
         private void SetStoryState(bool afterLoad = false)
         {
             discordComponent.EnsureUNBEATABLEAppId();
-            discordComponent.activity.Details = $"Slot {FileStorage.StorySaves.SelectedSlot + 1} Episode {FileStorage.variables.GetCurrentChapter() + 1}/{FileStorage.StorySaves.HighestReachedChapter}";
+            discordComponent.activity.Details = $"Slot {FileStorage.StorySaves.SelectedSlot + 1} Episode {FileStorage.variables.GetCurrentChapter() + 1}";
             discordComponent.activity.State = $"Story Mode On {DifficultyMap[FileStorage.variables.difficulty]}";
             discordComponent.updateActivity = true;
         }
