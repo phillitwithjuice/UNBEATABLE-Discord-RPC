@@ -301,7 +301,8 @@ namespace UNBEATABLE_Discord_RPC
             string letterGradeArcade = HighScoreScreen.GetLetterGradeArcade(JeffBezosController.prevAccuracy, JeffBezosController.prevMiss == 0, !JeffBezosController.prevFail);
             MetadataInfo songInfo = beatmap.metadata;
 
-            discordComponent.activity.Details = $"{JeffBezosController.prevScore} {letterGradeArcade} [{songInfo.GetDifficulty(beatmapInfo?.difficulty)} {songInfo.tagData.Level}] {songInfo.artistUnicode} - {songInfo.titleUnicode}";
+            var paddedScore = JeffBezosController.prevScore.ToString().PadLeft(7, '0');
+            discordComponent.activity.Details = $"{paddedScore} {letterGradeArcade} [{songInfo.GetDifficulty(beatmapInfo?.difficulty)} {songInfo.tagData.Level}] {songInfo.artistUnicode} - {songInfo.titleUnicode}";
             if (highScoreScreen?.previousHighScore != null && JeffBezosController.prevScore > highScoreScreen.previousHighScore.score)
             {
                 discordComponent.activity.State = "New Highscore";
