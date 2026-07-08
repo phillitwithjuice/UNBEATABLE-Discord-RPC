@@ -8,7 +8,9 @@ First, install [MelonLoader](https://github.com/LavaGang/MelonLoader). Since UNB
 
 Afterwards run UNBEATABLE once and open the games files (in Steam right click UNBEATABLE and choose Properties > Installed Files > Browse).
 
-Now download and copy the file "UNBEATABLE_Discord_RPC.dll" from the [latest release](https://github.com/phillitwithjuice/UNBEATABLE-Discord-RPC/releases/latest) into the "Mods" folder inside the game files and launch the game.
+Now download and copy the file "UNBEATABLE_Discord_RPC.dll" from the [latest release](https://github.com/phillitwithjuice/UNBEATABLE-Discord-RPC/releases/latest) into the "Mods" folder inside the game files.
+
+Additionally this Melon requires https://github.com/Lachee/discord-rpc-csharp/ so download the `netstandard2.0-dll.zip` from https://github.com/Lachee/discord-rpc-csharp/releases/tag/v1.6.1 and extract the `DiscordRPC.dll` file into the `UserLibs` folder inside the game files.
 
 ### Help! Please get rid of that console window/the stuttering when ALT+Tabbing
 
@@ -22,25 +24,25 @@ Add the following to your launch options (in Steam right click UNBEATABLE and ed
 
  - Startup status (during logo and title screen)
    
-   <img width="320" alt="image" src="https://github.com/user-attachments/assets/b0b4af50-663e-4db7-8069-a3cbd3457a6f" />
+   <img width="432" alt="image" src="images/getting-ready.png" />
 
  - Main menu status
 
-   <img width="320" alt="image" src="https://github.com/user-attachments/assets/9866982f-22aa-429c-98a2-39b0380bb29f" />
+   <img width="432" alt="image" src="images/main-menu.png" />
 
  - Story mode status
 
-   <img width="320" alt="image" src="https://github.com/user-attachments/assets/4b4a89e7-3be8-4080-bad8-a2083a1e89d5" />
+   <img width="432" alt="image" src="images/story-mode.png" />
    
- - Arcade mode mneu status (every screen has a different status)
+ - Arcade mode menu status (every screen has a different status)
 
-   <img width="320" alt="image" src="https://github.com/user-attachments/assets/3b9d29eb-7ebf-4d41-86cd-2e9d3ae9f6d6" />
+   <img width="432" alt="image" src="images/arcade-mode-profile.png" />
 
  - Arcade playing status
 
-   <img width="320" alt="image" src="https://github.com/user-attachments/assets/d14ad1b7-00a3-4a1b-9436-540a552a0c89" />
+   <img width="432" alt="image" src="images/arcade-mode-playing-a-song.png" />
 
  - Arcade scoring status
 
-   <img width="320" alt="image" src="https://github.com/user-attachments/assets/c55b6aae-8c7e-4ece-8d16-d6a51246b618" />
+   <img width="432" alt="image" src="images/arcade-mode-scoring.png" />
 
