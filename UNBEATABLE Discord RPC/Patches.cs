@@ -1,12 +1,7 @@
 ﻿using Arcade.UI.MenuStates;
 using Challenges;
 using HarmonyLib;
-using MelonLoader;
-using Minigames.Moped;
 using Rhythm;
-using Sirenix.Utilities;
-using System.Reflection;
-using System.Reflection.Emit;
 
 namespace UNBEATABLE_Discord_RPC
 {
@@ -22,9 +17,9 @@ namespace UNBEATABLE_Discord_RPC
     [HarmonyPatch(typeof(ChallengesView), nameof(ChallengesView.OnChallengeSelectedChange))]
     class ChallengesViewPatch1
     {
-        static void Postfix(ref ChallengeButton challengeButton)
+        static void Postfix(ref ChallengeButton challengeButton, ref ChallengeBoardDescriptor ____descriptor)
         {
-            CustomEvents.OnChallengeSelectedChange.Invoke(challengeButton.Index, challengeButton.ChallengeDescriptor);
+            CustomEvents.OnChallengeSelectedChange.Invoke(challengeButton.Index, challengeButton.ChallengeDescriptor, ____descriptor);
         }
     }
 
@@ -105,12 +100,22 @@ namespace UNBEATABLE_Discord_RPC
     }*/
 
 
-    [HarmonyPatch(typeof(RhythmTracker), nameof(RhythmTracker.Resume))]
+    [HarmonyPatch(typeof(RhythmTracker), nameof(RhythmTracker.Pause))]
     class RhythmTrackerPatch1
     {
         static void Postfix()
         {
-            CustomEvents.OnRhythmResume.Invoke();
+            CustomEvents.RhythmPauseDebounced();
+        }
+    }
+
+
+    [HarmonyPatch(typeof(RhythmTracker), nameof(RhythmTracker.Resume))]
+    class RhythmTrackerPatch2
+    {
+        static void Postfix()
+        {
+            CustomEvents.RhythmResumeDebounced();
         }
     }
 

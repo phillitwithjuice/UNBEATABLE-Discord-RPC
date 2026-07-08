@@ -1,6 +1,7 @@
 ﻿using Arcade.UI.MenuStates;
 using Arcade.UI.SongSelect;
 using Challenges;
+using DiscordRPC;
 using MelonLoader;
 using Rhythm;
 using UnityEngine;
@@ -22,6 +23,7 @@ namespace UNBEATABLE_Discord_RPC
         public CustomDiscordComponent discordComponent;
 
         private string loadedSceneName = "";
+        private Timestamps activityTimestamps;
 
         private RhythmGameContainer rhythmGameContainer;
 
@@ -38,6 +40,7 @@ namespace UNBEATABLE_Discord_RPC
             CustomEvents.OnArcadeMenuStateChange += OnArcadeMenuStateChange;
             CustomEvents.OnChallengeSelectedChange += OnChallengeSelectedChange;
             CustomEvents.OnSetChallengeBoard += OnSetChallengeBoard;
+            CustomEvents.OnRhythmPause += OnRythmPause;
             CustomEvents.OnRhythmResume += OnRhythmResume;
             CustomEvents.OnStartStory += OnStartStory;
             HighScoreScreen.ScoreScreenChallengeEvent += OnScoreEvent;
@@ -49,6 +52,7 @@ namespace UNBEATABLE_Discord_RPC
             CustomEvents.OnArcadeMenuStateChange -= OnArcadeMenuStateChange;
             CustomEvents.OnChallengeSelectedChange -= OnChallengeSelectedChange;
             CustomEvents.OnSetChallengeBoard -= OnSetChallengeBoard;
+            CustomEvents.OnRhythmPause -= OnRythmPause;
             CustomEvents.OnRhythmResume -= OnRhythmResume;
             CustomEvents.OnStartStory -= OnStartStory;
             HighScoreScreen.ScoreScreenChallengeEvent -= OnScoreEvent;
@@ -56,9 +60,11 @@ namespace UNBEATABLE_Discord_RPC
 
         private void Start()
         {
-            discordComponent.activity.Details = "";
-            discordComponent.activity.State = "Getting Ready";
-            discordComponent.updateActivity = true;
+            discordComponent.Presence = new DiscordRPC.RichPresence()
+            {
+                Details = "",
+                State = "Getting Ready",
+            };
         }
 
         private void OnSceneLoad(Scene LoadedScene, LoadSceneMode SceneMode)
@@ -73,13 +79,11 @@ namespace UNBEATABLE_Discord_RPC
             switch (JeffBezosController.rhythmGameType, loadedSceneName)
             {
                 case (RhythmGameType.Story, "LogoScreen"):
-                    discordComponent.activity.Details = "";
-                    discordComponent.activity.State = "Getting Ready";
-                    if (afterLoad)
+                    discordComponent.Presence = new DiscordRPC.RichPresence()
                     {
-                        discordComponent.StartActivityTimer();
-                    }
-                    discordComponent.updateActivity = true;
+                        Details = "",
+                        State = "Getting Ready",
+                    };
                     break;
                 case (RhythmGameType.Story, "BootUp"):
                     break;
@@ -103,19 +107,25 @@ namespace UNBEATABLE_Discord_RPC
             discordComponent.EnsureUNBEATABLEAppId();
             if (afterLoad)
             {
-                discordComponent.StartActivityTimer();
+                activityTimestamps = Timestamps.Now;
             }
-            discordComponent.activity.Details = "";
-            discordComponent.activity.State = "Main Menu";
-            discordComponent.updateActivity = true;
+            discordComponent.Presence = new RichPresence()
+            {
+                Details = "",
+                State = "Main Menu",
+                Timestamps = activityTimestamps,
+            };
         }
 
         private void SetStoryState(bool afterLoad = false)
         {
             discordComponent.EnsureUNBEATABLEAppId();
-            discordComponent.activity.Details = $"Slot {FileStorage.StorySaves.SelectedSlot + 1} Episode {FileStorage.variables.GetCurrentChapter() + 1}";
-            discordComponent.activity.State = $"Story Mode On {DifficultyMap[FileStorage.variables.difficulty]}";
-            discordComponent.updateActivity = true;
+            discordComponent.Presence = new RichPresence()
+            {
+                Details = $"Slot {FileStorage.StorySaves.SelectedSlot + 1} Episode {FileStorage.variables.GetCurrentChapter() + 1}",
+                State = $"Story Mode On {DifficultyMap[FileStorage.variables.difficulty]}",
+                Timestamps = activityTimestamps,
+            };
         }
 
         private void SetArcadeState(bool afterLoad = false)
@@ -130,25 +140,30 @@ namespace UNBEATABLE_Discord_RPC
                 // let OnArcadeMenuStateChange and OnSelectedSongChanged handle updating the Discord status
                 if (afterLoad)
                 {
-                    discordComponent.StartActivityTimer();
+                    activityTimestamps = Timestamps.Now;
                     ArcadeSongList.Instance.OnSelectedSongChanged += OnSelectedSongChanged;
-                    arcadeMenuStateMachine = FindObjectOfType<ArcadeMenuStateMachine>();
-                    arcadeSongList = FindObjectOfType<ArcadeSongList>();
+                    arcadeMenuStateMachine = FindFirstObjectByType<ArcadeMenuStateMachine>();
+                    arcadeSongList = FindFirstObjectByType<ArcadeSongList>();
                 }
             }
             else if (rhythmGameContainer != null && rhythmGameContainer.isActiveAndEnabled)
             {
-                SetCurrentPlayingSong(rhythmGameContainer.RhythmController.beatmap.metadata);
-                SetCurrentPlaybackTimestamps(rhythmGameContainer.RhythmController.songTracker);
-                discordComponent.activity.State = "Jamming The Keys";
-                discordComponent.updateActivity = true;
+                string details = GetCurrentlyPlayingSong(rhythmGameContainer.RhythmController.beatmap.metadata);
+                Timestamps timestamps = GetCurrentPlaybackTimestamps(rhythmGameContainer.RhythmController.songTracker, rhythmGameContainer.RhythmController.beatmap.metadata);
+                discordComponent.Presence = new RichPresence()
+                {
+                    Type = ActivityType.Listening,
+                    Details = details,
+                    State = "Jamming The Keys",
+                    Timestamps = timestamps,
+                };
             } else if (loadedSceneName == "ScoreScreenArcadeMode")
             {
                 // let OnScoreEvent handle updating the Discord status
                 if (afterLoad)
                 {
-                    discordComponent.StartActivityTimer();
-                    highScoreScreen = FindObjectOfType<HighScoreScreen>();
+                    activityTimestamps = Timestamps.Now;
+                    highScoreScreen = FindFirstObjectByType<HighScoreScreen>();
                 }
             }
         }
@@ -160,7 +175,7 @@ namespace UNBEATABLE_Discord_RPC
 
         private void OnStartStory()
         {
-            discordComponent.StartActivityTimer();
+            activityTimestamps = Timestamps.Now;
         }
 
         private void OnArcadeMenuStateChange(ArcadeMenuState from, ArcadeMenuState to, bool Instant)
@@ -178,43 +193,62 @@ namespace UNBEATABLE_Discord_RPC
             state ??= arcadeMenuStateMachine?.CurrentState;
             var songInfo = (beatmapItem?.Beatmap?.metadata) ?? (arcadeSongList?.GetSelectedSong()?.Beatmap?.metadata);
             var beatmapInfo = (beatmapItem?.BeatmapInfo) ?? (arcadeSongList?.GetSelectedSong()?.BeatmapInfo);
+            string details;
             switch (state?.StateName)
             {
                 case EArcadeMenuStates.None:
                     break;
                 case EArcadeMenuStates.TitleScreen:
-                    discordComponent.activity.Details = "";
-                    discordComponent.activity.State = "Entering The Arcade";
-                    discordComponent.updateActivity = true;
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        State = "Entering The Arcade",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 case EArcadeMenuStates.MainMenu:
-                    discordComponent.activity.Details = "";
-                    discordComponent.activity.State = "Arcade Menu";
-                    discordComponent.updateActivity = true;
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        State = "Arcade Menu",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 case EArcadeMenuStates.SongSelect:
-                    SetCurrentPlayingSong(songInfo, beatmapInfo);
-                    discordComponent.activity.State = "Choosing A Song";
-                    discordComponent.updateActivity = true;
+                    details = GetCurrentlyPlayingSong(songInfo, beatmapInfo);
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        Details = details,
+                        State = "Choosing A Song",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 case EArcadeMenuStates.DifficultySelect:
-                    SetCurrentPlayingSong(songInfo, beatmapInfo);
-                    discordComponent.activity.State = "Choosing A Difficulty";
-                    discordComponent.updateActivity = true;
+                    details = GetCurrentlyPlayingSong(songInfo, beatmapInfo);
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        Details = details,
+                        State = "Choosing A Difficulty",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 case EArcadeMenuStates.FilterSelect:
                     break;
                 case EArcadeMenuStates.Leaderboard:
-                    SetCurrentPlayingSong(songInfo, beatmapInfo);
-                    discordComponent.activity.State = "🌠Stargazing🌠";
-                    discordComponent.updateActivity = true;
+                    details = GetCurrentlyPlayingSong(songInfo, beatmapInfo);
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        Details = details,
+                        State = "🌠Stargazing🌠",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 case EArcadeMenuStates.Modifiers:
                     break;
                 case EArcadeMenuStates.FolioView:
-                    discordComponent.activity.Details = "";
-                    discordComponent.activity.State = "Browsing Challenges";
-                    discordComponent.updateActivity = true;
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        State = "Browsing Challenges",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 case EArcadeMenuStates.ChallengeView:
                     // let OnSetChallengeBoard and OnChallengeSelectedChange handle updating the Discord status
@@ -222,14 +256,18 @@ namespace UNBEATABLE_Discord_RPC
                 case EArcadeMenuStates.CharacterSelect:
                     break;
                 case EArcadeMenuStates.PlayerLeaderboard:
-                    discordComponent.activity.Details = "";
-                    discordComponent.activity.State = "🌠Stargazing🌠";
-                    discordComponent.updateActivity = true;
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        State = "🌠Stargazing🌠",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 case EArcadeMenuStates.PlayerStats:
-                    discordComponent.activity.Details = "";
-                    discordComponent.activity.State = "🎵Seeing Someone Else🎵";
-                    discordComponent.updateActivity = true;
+                    discordComponent.Presence = new RichPresence()
+                    {
+                        State = "🎵Seeing Someone Else🎵",
+                        Timestamps = activityTimestamps,
+                    };
                     break;
                 default:
                     break;
@@ -238,49 +276,66 @@ namespace UNBEATABLE_Discord_RPC
 
         private void OnSetChallengeBoard(ChallengeBoardDescriptor boardDescriptor)
         {
-            discordComponent.activity.State = $"Browsing {boardDescriptor.boardName} [{boardDescriptor.CompletedChallenges}/{boardDescriptor.Challenges.Length}]";
-            discordComponent.updateActivity = true;
-        }
-
-        private void OnChallengeSelectedChange(int index, BaseChallengeDescriptor baseChallengeDescriptor)
-        {
-            discordComponent.activity.Details = $"c_{index:00}{(baseChallengeDescriptor.GetChallengeState() == BaseChallengeDescriptor.ChallengeState.Complete ? " Complete" : "")}";
-            discordComponent.updateActivity = true;
-        }
-
-        private void SetCurrentPlayingSong(MetadataInfo songInfo, BeatmapInfo beatmapInfo = null)
-        {
-            if (songInfo == null)
+            discordComponent.Presence = new RichPresence()
             {
-                discordComponent.activity.Details = "Unknown";
-            } else
-            {
-                discordComponent.activity.Details = $"[{songInfo.GetDifficulty(beatmapInfo?.difficulty)} {songInfo.tagData.Level}] {songInfo.artistUnicode} - {songInfo.titleUnicode}";
-            }
-            discordComponent.updateActivity = true;
+                State = $"Browsing {boardDescriptor.boardName} [{boardDescriptor.CompletedChallenges}/{boardDescriptor.Challenges.Length}]",
+            };
         }
 
-        private void SetCurrentPlaybackTimestamps(RhythmTracker rhythmTracker)
+        private void OnChallengeSelectedChange(int index, BaseChallengeDescriptor baseChallengeDescriptor, ChallengeBoardDescriptor boardDescriptor)
+        {
+            discordComponent.Presence = new RichPresence()
+            {
+                State = $"Browsing {boardDescriptor.boardName} [{boardDescriptor.CompletedChallenges}/{boardDescriptor.Challenges.Length}]",
+                Details = $"c_{index:00} {(baseChallengeDescriptor.GetChallengeState() == BaseChallengeDescriptor.ChallengeState.Complete ? "COMPLETE" : "INCOMPLETE")}",
+            };
+        }
+
+        private string GetCurrentlyPlayingSong(MetadataInfo songInfo, BeatmapInfo beatmapInfo = null)
+        {
+            return songInfo == null
+                ? "Unknown"
+                : $"[{songInfo.GetDifficulty(beatmapInfo?.difficulty)} {songInfo.tagData.Level}] {songInfo.artistUnicode} - {songInfo.titleUnicode}";
+        }
+
+        private Timestamps GetCurrentPlaybackTimestamps(RhythmTracker rhythmTracker, MetadataInfo songInfo)
         {
             if (rhythmGameContainer != null && rhythmGameContainer.isActiveAndEnabled)
             {
-                var playbackTime = (int)(rhythmTracker.TimelinePosition / FileStorage.beatmapOptions.songSpeed) / 1000;
-                var start = Convert.ToInt64((DateTime.UtcNow.AddSeconds(-playbackTime) - DateTime.UnixEpoch).TotalSeconds);
-                discordComponent.activity.Timestamps = new Discord.ActivityTimestamps();
-                discordComponent.activity.Timestamps.Start = start;
-                if (playbackTime < 0)
-                {
-                    discordComponent.activity.Timestamps.End = start;
-                }
-                discordComponent.updateActivity = true;
+                var playbackTime = (rhythmTracker.TimelinePosition / FileStorage.beatmapOptions.songSpeed);
+                Melon<Core>.Logger.Msg($"Playback time: {playbackTime}, Song length: {songInfo.tagData.SongLength}");
+                var start = DateTime.UtcNow.AddMilliseconds(-playbackTime);
+                var end = start.AddSeconds(songInfo.tagData.SongLength);
+                return new Timestamps(start, end);
             }
+            return null;
+        }
+
+        private void OnRythmPause()
+        {
+            string details = GetCurrentlyPlayingSong(rhythmGameContainer.RhythmController.beatmap.metadata);
+            discordComponent.Presence = new RichPresence()
+            {
+                Type = ActivityType.Listening,
+                Details = details,
+                State = "Paused",
+                Timestamps = Timestamps.Now,
+            };
         }
 
         private void OnRhythmResume()
         {
             if (rhythmGameContainer != null && rhythmGameContainer.isActiveAndEnabled)
             {
-                SetCurrentPlaybackTimestamps(rhythmGameContainer.RhythmController.songTracker);
+                string details = GetCurrentlyPlayingSong(rhythmGameContainer.RhythmController.beatmap.metadata);
+                Timestamps timestamps = GetCurrentPlaybackTimestamps(rhythmGameContainer.RhythmController.songTracker, rhythmGameContainer.RhythmController.beatmap.metadata);
+                discordComponent.Presence = new RichPresence()
+                {
+                    Type = ActivityType.Listening,
+                    Details = details,
+                    State = "Jamming The Keys",
+                    Timestamps = timestamps,
+                };
             }
         }
 
@@ -302,16 +357,14 @@ namespace UNBEATABLE_Discord_RPC
             MetadataInfo songInfo = beatmap.metadata;
 
             var paddedScore = JeffBezosController.prevScore.ToString().PadLeft(7, '0');
-            discordComponent.activity.Details = $"{paddedScore} {letterGradeArcade} [{songInfo.GetDifficulty(beatmapInfo?.difficulty)} {songInfo.tagData.Level}] {songInfo.artistUnicode} - {songInfo.titleUnicode}";
-            if (highScoreScreen?.previousHighScore != null && JeffBezosController.prevScore > highScoreScreen.previousHighScore.score)
+            var state = highScoreScreen?.previousHighScore != null && JeffBezosController.prevScore > highScoreScreen.previousHighScore.score ?
+                "New Highscore" : "Song Scoring";
+            discordComponent.Presence = new RichPresence()
             {
-                discordComponent.activity.State = "New Highscore";
-            }
-            else
-            {
-                discordComponent.activity.State = "Song Scoring";
-            }
-            discordComponent.updateActivity = true;
+                Details = $"{paddedScore} {letterGradeArcade} [{songInfo.GetDifficulty(beatmapInfo?.difficulty)} {songInfo.tagData.Level}] {songInfo.artistUnicode} - {songInfo.titleUnicode}",
+                State = state,
+                Timestamps = activityTimestamps,
+            };
         }
     }
 }

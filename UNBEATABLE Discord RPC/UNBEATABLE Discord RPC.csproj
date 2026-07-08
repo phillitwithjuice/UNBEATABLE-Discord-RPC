@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<Nullable>disable</Nullable>
@@ -558,6 +558,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Include="MelonLogger.cs" />
 		<Compile Include="Patches.cs" />
 		<Compile Include="Core.cs" />
 		<Compile Include="CustomDiscordComponent.cs" />
@@ -568,6 +569,12 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Resources.resx</DependentUpon>
 		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="DiscordRichPresence" Version="1.6.1.70">
+	    <IncludeAssets></IncludeAssets>
+	  </PackageReference>
 	</ItemGroup>
 	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

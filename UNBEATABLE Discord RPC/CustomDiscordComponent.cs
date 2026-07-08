@@ -1,37 +1,46 @@
 ﻿namespace UNBEATABLE_Discord_RPC
 {
-    using Discord;
+    using DiscordRPC;
     using MelonLoader;
     using System.Collections;
     using UnityEngine;
 
     public class CustomDiscordComponent : MonoBehaviour
     {
-        public Discord discord;
+        private Coroutine _updateCoroutine;
 
-        public Activity activity;
+        public DiscordRpcClient Client { get; private set; }
 
-        public ActivityManager activityManager;
+        private RichPresence _presence = new RichPresence();
+        public bool UpdatePresence { get; private set; }
 
-        public static readonly long UNBEATABLEAppId = 1440143114873606294L;
-        public static readonly long WhiteLabelAppId = 892184493899804682L;
+        public RichPresence Presence {
+            get { return _presence; }
+            set
+            {
+                Melon<Core>.Logger.Msg($"Presence Setter");
+                _presence = value;
+                UpdatePresence = true;
+            }
+        }
 
-        private long _appId = UNBEATABLEAppId;
-        public long appId {
+        public static readonly string UNBEATABLEAppId = "1440143114873606294";
+        public static readonly string WhiteLabelAppId = "892184493899804682";
+
+        private string _appId = UNBEATABLEAppId;
+        public string AppId {
             get { return _appId; }
             set {
-                if (discord != null)
+                if (Client != null)
                 {
-                    discord.Dispose();
+                    Client.Dispose();
                 }
                 _appId = value;
                 ConnectToDiscord();
             }
         }
 
-        public bool updateActivity;
-
-        public float updateTime = .5f;
+        public float UpdateTime = .5f;
 
         public bool IsConnected { get; private set; }
 
@@ -43,12 +52,14 @@
 
         private void Start()
         {
-            StartCoroutine(UpdateDiscord());
+            _updateCoroutine = StartCoroutine(UpdateDiscord());
         }
 
         private void OnDestroy()
         {
-            discord.Dispose();
+            Melon<Core>.Logger.Msg($"Stopping Discord loop {IsConnected}");
+            StopCoroutine(_updateCoroutine);
+            Client.Dispose();
         }
 
         private IEnumerator UpdateDiscord()
@@ -57,59 +68,63 @@
             {
                 if (IsConnected)
                 {
-                    discord.RunCallbacks();
-                    if (updateActivity)
+                    if (!Client.AutoEvents) Client.Invoke();
+                    if (UpdatePresence)
                     {
-                        Melon<Core>.Logger.Msg($"Updating Discord activity to {activity.Details} {activity.State} {activity.Timestamps.Start} {activity.Timestamps.End}");
-                        activityManager.UpdateActivity(activity, delegate {});
-                        updateActivity = false;
+                        Melon<Core>.Logger.Msg($"Updating Discord presence to {Presence?.Type} {Presence?.Details} {Presence?.State} {Presence.Timestamps?.Start} {Presence.Timestamps?.End}");
+                        Client.SetPresence(Presence);
+                        UpdatePresence = false;
                     }
                 }
-                yield return new WaitForSecondsRealtime(updateTime);
+                yield return new WaitForSecondsRealtime(UpdateTime);
             }
         }
 
         private void ConnectToDiscord()
         {
-            IsConnected = true;
+            IsConnected = false;
             try
             {
-                discord = new global::Discord.Discord(appId, (ulong) CreateFlags.NoRequireDiscord);
+                Client = new DiscordRpcClient(_appId);
+                Client.OnConnectionEstablished += (sender, e) =>
+                {
+                    Melon<Core>.Logger.Msg($"Connected to Discord with AppId {_appId}");
+                };
+                Client.OnReady += (sender, e) =>
+                {
+                    Melon<Core>.Logger.Msg($"Discord client ready");
+                    IsConnected = true;
+                    UpdatePresence = true;
+                };
+                Client.OnError += (sender, e) =>
+                {
+                    Melon<Core>.Logger.Msg($"Discord error");
+                    IsConnected = false;
+                };
+                Client.Initialize();
             }
             catch
             {
+                Melon<Core>.Logger.Msg($"Failed to connect to Discord");
                 IsConnected = false;
                 return;
             }
-
-            activityManager = discord.GetActivityManager();
-            activity.Assets.SmallImage = (activity.Assets.LargeImage = "drp_icon");
-            activity.Details = "";
-            activity.State = "";
-            updateActivity = true;
         }
 
         public void EnsureUNBEATABLEAppId()
         {
-            if (appId != UNBEATABLEAppId)
+            if (AppId != UNBEATABLEAppId)
             {
-                appId = UNBEATABLEAppId;
+                AppId = UNBEATABLEAppId;
             }
         }
 
         public void EnsureWhiteLabelAppId()
         {
-            if (appId != WhiteLabelAppId)
+            if (AppId != WhiteLabelAppId)
             {
-                appId = WhiteLabelAppId;
+                AppId = WhiteLabelAppId;
             }
-        }
-
-        public void StartActivityTimer()
-        {
-            activity.Timestamps.Start = Convert.ToInt64((DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
-            activity.Timestamps.End = 0;
-            updateActivity = true;
         }
     }
 }

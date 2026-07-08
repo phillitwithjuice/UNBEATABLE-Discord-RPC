@@ -1,10 +1,5 @@
 ﻿using Arcade.UI.MenuStates;
 using Challenges;
-using MelonLoader;
-using Steamworks.Data;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace UNBEATABLE_Discord_RPC
 {
@@ -13,7 +8,7 @@ namespace UNBEATABLE_Discord_RPC
         public delegate void ArcadeMenuStateChange(ArcadeMenuState from, ArcadeMenuState to, bool instant);
         public static ArcadeMenuStateChange OnArcadeMenuStateChange;
 
-        public delegate void ChallengeSelectedChange(int index, BaseChallengeDescriptor baseChallengeDescriptor);
+        public delegate void ChallengeSelectedChange(int index, BaseChallengeDescriptor baseChallengeDescriptor, ChallengeBoardDescriptor boardDescriptor);
         public static ChallengeSelectedChange OnChallengeSelectedChange;
 
         public delegate void SetChallengeBoard(ChallengeBoardDescriptor boardDescriptor);
@@ -37,8 +32,28 @@ namespace UNBEATABLE_Discord_RPC
             }
         }*/
 
+        public delegate void RythmPause();
+        public static RythmPause OnRhythmPause;
+        private static bool rythmPausedState = false;
+        public static void RhythmPauseDebounced()
+        {
+            if (!rythmPausedState)
+            {
+                OnRhythmPause.Invoke();
+                rythmPausedState = true;
+            }
+        }
+
         public delegate void RhythmResume();
         public static RhythmResume OnRhythmResume;
+        public static void RhythmResumeDebounced()
+        {
+            if (rythmPausedState)
+            {
+                OnRhythmResume.Invoke();
+                rythmPausedState = false;
+            }
+        }
 
         public delegate void StartStory();
         public static StartStory OnStartStory;

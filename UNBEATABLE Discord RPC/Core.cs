@@ -13,7 +13,6 @@ namespace UNBEATABLE_Discord_RPC
         public static readonly Regex storyModePattern = new("C\\d+_.+");
 
         public DiscordComponent discordComponent;
-        private bool gameClosing;
         public bool GameStarted { get; private set; }
         public long gameStartedTime { get; private set; }
         public Rhythm.MetadataInfo songinfo { get; private set; }
