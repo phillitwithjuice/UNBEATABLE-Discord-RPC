@@ -303,9 +303,8 @@ namespace UNBEATABLE_Discord_RPC
             if (rhythmGameContainer != null && rhythmGameContainer.isActiveAndEnabled)
             {
                 var playbackTime = (rhythmTracker.TimelinePosition / FileStorage.beatmapOptions.songSpeed);
-                Melon<Core>.Logger.Msg($"Playback time: {playbackTime}, Song length: {songInfo.tagData.SongLength}");
                 var start = DateTime.UtcNow.AddMilliseconds(-playbackTime);
-                var end = start.AddSeconds(songInfo.tagData.SongLength);
+                var end = start.AddSeconds(songInfo.tagData.SongLength / FileStorage.beatmapOptions.songSpeed);
                 return new Timestamps(start, end);
             }
             return null;
