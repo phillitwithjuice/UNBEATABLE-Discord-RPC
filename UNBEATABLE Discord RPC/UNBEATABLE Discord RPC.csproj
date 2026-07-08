@@ -558,7 +558,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Include="MelonLogger.cs" />
 		<Compile Include="Patches.cs" />
 		<Compile Include="Core.cs" />
 		<Compile Include="CustomDiscordComponent.cs" />
